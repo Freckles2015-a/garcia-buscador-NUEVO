@@ -1,0 +1,457 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GARCIA - Advanced Search</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #050a13;
+    color: #eaf7ff;
+    font-family: Arial, sans-serif;
+}
+
+header {
+    text-align: center;
+    padding: 55px 15px 25px;
+}
+
+.logo {
+    font-size: clamp(48px, 10vw, 85px);
+    letter-spacing: 12px;
+    font-weight: 900;
+    color: #00d9ff;
+    text-shadow: 0 0 12px #00bfff, 0 0 35px #006aff;
+}
+
+.subtitle {
+    color: #8abbd7;
+    letter-spacing: 5px;
+    font-size: 12px;
+    margin-top: 12px;
+}
+
+main {
+    width: min(950px, 94%);
+    margin: 25px auto;
+}
+
+.search {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #00cfff;
+    border-radius: 16px;
+    background: #0b192a;
+    box-shadow: 0 0 25px #007bff33;
+}
+
+.search input {
+    flex: 1;
+    min-width: 0;
+    padding: 14px;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    color: white;
+    font-size: 17px;
+}
+
+button {
+    cursor: pointer;
+    border: 1px solid #087fae;
+    background: #092c48;
+    color: #dff8ff;
+    border-radius: 10px;
+    padding: 12px 17px;
+    transition: .2s;
+}
+
+button:hover, button.active {
+    background: #006c9c;
+    box-shadow: 0 0 15px #00bfff77;
+}
+
+.search button {
+    font-size: 17px;
+}
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 9px;
+    margin: 22px 0;
+}
+
+#status {
+    text-align: center;
+    color: #00d9ff;
+    min-height: 25px;
+    margin: 20px 0;
+}
+
+#results {
+    display: grid;
+    gap: 14px;
+    margin: 20px 0 60px;
+}
+
+.result {
+    background: #0b1929;
+    border: 1px solid #153d58;
+    border-radius: 13px;
+    padding: 18px;
+    overflow-wrap: anywhere;
+}
+
+.result h3 {
+    color: #00d9ff;
+    margin: 0 0 9px;
+}
+
+.result a {
+    color: #00cfff;
+    text-decoration: none;
+}
+
+.result a:hover {
+    text-decoration: underline;
+}
+
+.result p {
+    color: #b6c9d8;
+    line-height: 1.6;
+}
+
+.result img {
+    max-width: 100%;
+    width: 190px;
+    max-height: 150px;
+    object-fit: cover;
+    border-radius: 9px;
+}
+
+.map {
+    width: 100%;
+    height: 430px;
+    border: 1px solid #087fae;
+    border-radius: 12px;
+}
+
+footer {
+    text-align: center;
+    color: #526c80;
+    padding: 30px;
+    font-size: 12px;
+}
+
+@media(max-width: 550px) {
+    header { padding-top: 35px; }
+    .logo { letter-spacing: 6px; }
+    .search { gap: 4px; }
+    .search input { font-size: 14px; padding: 9px; }
+    .search button { padding: 10px; }
+    .tabs button { padding: 10px; font-size: 13px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">GARCIA</div>
+    <div class="subtitle">ADVANCED SEARCH SYSTEM</div>
+</header>
+
+<main>
+    <form class="search" id="searchForm">
+        <input id="query" type="search"
+               placeholder="¿Qué quieres encontrar?"
+               autocomplete="off">
+        <button type="submit">🔎</button>
+    </form>
+
+    <nav class="tabs">
+        <button class="active" data-type="web">🌐 Web</button>
+        <button data-type="images">🖼️ Imágenes</button>
+        <button data-type="videos">🎬 Vídeos</button>
+        <button data-type="news">📰 Noticias</button>
+        <button data-type="maps">🗺️ Mapas</button>
+    </nav>
+
+    <div id="status">Escribe algo para comenzar tu búsqueda.</div>
+    <section id="results"></section>
+</main>
+
+<footer>GARCIA © 2026 | ADVANCED SEARCH</footer>
+
+<script>
+const input = document.getElementById("query");
+const results = document.getElementById("results");
+const statusText = document.getElementById("status");
+const buttons = document.querySelectorAll("[data-type]");
+
+let category = "web";
+
+buttons.forEach(button => {
+    button.addEventListener("click", () => {
+        category = button.dataset.type;
+
+        buttons.forEach(b => b.classList.remove("active"));
+        button.classList.add("active");
+
+        if (input.value.trim()) search();
+    });
+});
+
+document.getElementById("searchForm")
+.addEventListener("submit", event => {
+    event.preventDefault();
+    search();
+});
+
+function showStatus(message) {
+    statusText.textContent = message;
+}
+
+function makeCard(title, description, url) {
+    const card = document.createElement("article");
+    card.className = "result";
+
+    const heading = document.createElement("h3");
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = title;
+
+    heading.appendChild(link);
+    card.appendChild(heading);
+
+    const paragraph = document.createElement("p");
+    paragraph.textContent = description || "Sin descripción disponible.";
+    card.appendChild(paragraph);
+
+    return card;
+}
+
+async function searchWeb(q) {
+    const url = "https://es.wikipedia.org/w/api.php?" +
+        new URLSearchParams({
+            action: "query",
+            list: "search",
+            srsearch: q,
+            srlimit: "15",
+            format: "json",
+            origin: "*"
+        });
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Error de búsqueda");
+
+    const data = await response.json();
+
+    if (!data.query.search.length) {
+        showStatus("No se encontraron resultados.");
+        return;
+    }
+
+    showStatus("Resultados encontrados: " +
+        data.query.search.length);
+
+    data.query.search.forEach(item => {
+        const link = "https://es.wikipedia.org/wiki/" +
+            encodeURIComponent(item.title.replace(/ /g, "_"));
+
+        results.appendChild(
+            makeCard(item.title,
+                item.snippet.replace(/<[^>]*>/g, ""),
+                link)
+        );
+    });
+}
+
+async function searchImages(q) {
+    const url = "https://commons.wikimedia.org/w/api.php?" +
+        new URLSearchParams({
+            action: "query",
+            generator: "search",
+            gsrsearch: q + " filetype:bitmap",
+            gsrnamespace: "6",
+            gsrlimit: "15",
+            prop: "imageinfo",
+            iiprop: "url",
+            iiurlwidth: "300",
+            format: "json",
+            origin: "*"
+        });
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Error de imágenes");
+
+    const data = await response.json();
+    const pages = Object.values(data.query?.pages || {});
+
+    if (!pages.length) {
+        showStatus("No se encontraron imágenes.");
+        return;
+    }
+
+    showStatus("Imágenes encontradas: " + pages.length);
+
+    pages.forEach(item => {
+        const image = item.imageinfo?.[0]?.thumburl ||
+                      item.imageinfo?.[0]?.url;
+
+        if (!image) return;
+
+        const card = document.createElement("article");
+        card.className = "result";
+
+        const heading = document.createElement("h3");
+        heading.textContent = item.title;
+
+        const picture = document.createElement("img");
+        picture.src = image;
+        picture.alt = item.title;
+        picture.loading = "lazy";
+
+        card.append(heading, picture);
+        results.appendChild(card);
+    });
+}
+
+async function searchNews(q) {
+    const url = "https://api.gdeltproject.org/api/v2/doc/doc?" +
+        new URLSearchParams({
+            query: q,
+            mode: "ArtList",
+            format: "json",
+            maxrecords: "15",
+            sort: "DateDesc"
+        });
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Error de noticias");
+
+    const data = await response.json();
+    const articles = data.articles || [];
+
+    if (!articles.length) {
+        showStatus("No se encontraron noticias.");
+        return;
+    }
+
+    showStatus("Noticias encontradas: " + articles.length);
+
+    articles.forEach(item => {
+        results.appendChild(
+            makeCard(item.title, item.seendate, item.url)
+        );
+    });
+}
+
+async function searchMaps(q) {
+    const url = "https://nominatim.openstreetmap.org/search?" +
+        new URLSearchParams({
+            q: q,
+            format: "json",
+            limit: "8"
+        });
+
+    const response = await fetch(url, {
+        headers: { "Accept": "application/json" }
+    });
+
+    if (!response.ok) throw new Error("Error de mapas");
+
+    const places = await response.json();
+
+    if (!places.length) {
+        showStatus("No se encontraron lugares.");
+        return;
+    }
+
+    showStatus("Lugares encontrados: " + places.length);
+
+    places.forEach(place => {
+        results.appendChild(
+            makeCard(
+                place.display_name,
+                "Coordenadas: " + place.lat + ", " + place.lon,
+                "https://www.openstreetmap.org/?mlat=" +
+                place.lat + "&mlon=" + place.lon
+            )
+        );
+    });
+
+    const first = places[0];
+
+    const map = document.createElement("iframe");
+    map.className = "map";
+    map.loading = "lazy";
+    map.title = "Mapa de resultados";
+
+    const bbox = [
+        Number(first.lon) - 0.04,
+        Number(first.lat) - 0.025,
+        Number(first.lon) + 0.04,
+        Number(first.lat) + 0.025
+    ];
+
+    map.src = "https://www.openstreetmap.org/export/embed.html?" +
+        "bbox=" + bbox.join("%2C") +
+        "&layer=mapnik&marker=" + first.lat + "%2C" + first.lon;
+
+    results.appendChild(map);
+}
+
+async function search() {
+    const q = input.value.trim();
+
+    if (!q) {
+        showStatus("Escribe algo para buscar.");
+        return;
+    }
+
+    results.replaceChildren();
+    showStatus("Buscando...");
+
+    try {
+        if (category === "web") {
+            await searchWeb(q);
+        } else if (category === "images") {
+            await searchImages(q);
+        } else if (category === "news") {
+            await searchNews(q);
+        } else if (category === "maps") {
+            await searchMaps(q);
+        } else if (category === "videos") {
+            showStatus("Resultados de vídeo en YouTube.");
+            results.appendChild(
+                makeCard(
+                    "Buscar vídeos sobre: " + q,
+                    "Abre los vídeos relacionados en YouTube.",
+                    "https://www.youtube.com/results?search_query=" +
+                    encodeURIComponent(q)
+                )
+            );
+        }
+    } catch (error) {
+        showStatus(
+            "No se pudo conectar con el servicio. Inténtalo de nuevo."
+        );
+    }
+}
+</script>
+
+</body>
+</html>
